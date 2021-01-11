@@ -1,0 +1,25 @@
+table! {
+    mediathek_entries (id) {
+        id -> Integer,
+        station -> Text,
+        topic -> Nullable<Text>,
+        title -> Text,
+        date -> Nullable<Text>,
+        time -> Nullable<Text>,
+        duration -> Nullable<Text>,
+        size -> Nullable<Text>,
+        description -> Nullable<Text>,
+        url -> Text,
+        website -> Nullable<Text>,
+        url_subtitles -> Nullable<Text>,
+        url_rtmp -> Nullable<Text>,
+        url_small -> Nullable<Text>,
+        url_rtmp_small -> Nullable<Text>,
+        url_hd -> Nullable<Text>,
+        url_rtmp_hd -> Nullable<Text>,
+        datuml -> Nullable<Text>,
+        url_history -> Nullable<Text>,
+        geo -> Nullable<Text>,
+        new -> Nullable<Text>,
+    }
+}
