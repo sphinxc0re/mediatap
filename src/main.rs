@@ -141,8 +141,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         diesel::insert_into(crate::schema::mediathek_entries::table)
             .values(&values)
-            .execute(&connection)
-            .expect("NOOOOO");
+            .execute(&connection)?;
     }
 
     Ok(())
