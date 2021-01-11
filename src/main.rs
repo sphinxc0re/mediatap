@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut last_station = String::new();
         let mut last_topic = String::new();
 
-        inner
+        let values: Vec<_> = inner
             .iter()
             .skip(2)
             .filter_map(|entry| {
@@ -69,7 +69,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 if let Json::STRING(inner) = jsn {
                                     inner.to_owned()
                                 } else {
-                                    "".to_string()
+                                    String::new()
                                 }
                             })
                             .collect();
@@ -133,14 +133,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     ..input_data
                 }
             })
-            .for_each(|data| {
-                use crate::diesel::RunQueryDsl;
+            .collect();
 
-                diesel::insert_into(crate::schema::mediathek_entries::table)
-                    .values(&data)
-                    .execute(&connection)
-                    .expect("NOOOOO");
-            });
+        use crate::diesel::RunQueryDsl;
+
+        println!("Building Database...");
+
+        diesel::insert_into(crate::schema::mediathek_entries::table)
+            .values(&values)
+            .execute(&connection)
+            .expect("NOOOOO");
     }
 
     Ok(())
