@@ -9,11 +9,12 @@ mod url_util;
 
 use crate::input_data::InputData;
 use async_std::task;
+use clap::Clap;
 use diesel::{Connection, SqliteConnection};
 use diesel_migrations::embed_migrations;
 use directories::ProjectDirs;
 use json_minimal::Json;
-use std::io::Read;
+use std::io::{self, Read, Write};
 use xz2::read::XzDecoder;
 
 const BASE_URL: &str = "https://liste.mediathekview.de";
@@ -21,9 +22,26 @@ const FILM_LIST_FILE_NAME: &str = "Filmliste-akt.xz";
 
 const DB_FILE_NAME: &str = "db.sqlite";
 
-embed_migrations!();
+#[derive(Clap)]
+enum Cmd {
+    /// Updates the film-list
+    Update {
+        #[clap(default_value = BASE_URL, long)]
+        server_url: String,
+    },
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cmd = Cmd::parse();
+
+    match cmd {
+        Cmd::Update { server_url } => run(server_url),
+    }
+}
+
+embed_migrations!();
+
+fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
     let dirs = ProjectDirs::from("", "", env!("CARGO_PKG_NAME")).unwrap();
 
     let base_dir = dirs.data_dir().to_path_buf();
@@ -37,18 +55,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     embedded_migrations::run(&connection)?;
 
-    let list_url = format!("{}/{}", BASE_URL, FILM_LIST_FILE_NAME);
+    let list_url = format!("{}/{}", server_url, FILM_LIST_FILE_NAME);
 
-    println!("Fetching list...");
+    print!("Fetching list...");
+    io::stdout().flush().unwrap();
     let bytes = task::block_on(surf::get(&list_url).recv_bytes())?;
+    println!(" done!");
 
-    println!("Decompressing...");
+    print!("Decompressing...");
+    io::stdout().flush().unwrap();
     let mut compressed_list = XzDecoder::new(bytes.as_slice());
 
     let mut contents = Vec::new();
     compressed_list.read_to_end(&mut contents).unwrap();
+    println!(" done!");
 
-    println!("Parsing + transforming...");
+    print!("Parsing + transforming...");
+    io::stdout().flush().unwrap();
     let root_value = Json::parse(&contents).unwrap();
 
     if let Json::JSON(inner) = root_value {
@@ -134,14 +157,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             })
             .collect();
+        println!(" done!");
 
         use crate::diesel::RunQueryDsl;
 
-        println!("Building Database...");
+        print!("Building Database...");
+        io::stdout().flush().unwrap();
+
+        diesel::delete(crate::schema::mediathek_entries::table).execute(&connection)?;
 
         diesel::insert_into(crate::schema::mediathek_entries::table)
             .values(&values)
             .execute(&connection)?;
+
+        println!(" done!");
     }
 
     Ok(())

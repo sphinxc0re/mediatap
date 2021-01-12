@@ -14,3 +14,4 @@ diesel = { version = "1.4", features = ["sqlite"] }
 directories = "3.0.1"
 json_minimal = "0.1.3"
 diesel_migrations = "1.4.0"
+clap = "3.0.0-beta.2"
