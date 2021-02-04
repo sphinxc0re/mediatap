@@ -1,4 +1,5 @@
 use crate::schema::mediathek_entries;
+use chrono::{NaiveDate, NaiveTime};
 use diesel::Insertable;
 
 #[derive(Insertable, Debug)]
@@ -7,9 +8,9 @@ pub struct InputData {
     pub station: String,
     pub topic: String,
     pub title: String,
-    pub date: String,
-    pub time: String,
-    pub duration: String,
+    pub date: NaiveDate,
+    pub time: NaiveTime,
+    pub duration: i64,
     /// The size in MB
     pub size: String,
     pub description: String,

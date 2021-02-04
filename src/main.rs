@@ -9,6 +9,7 @@ mod url_util;
 
 use crate::input_data::InputData;
 use async_std::task;
+use chrono::{NaiveDate, NaiveTime};
 use clap::Clap;
 use diesel::{Connection, SqliteConnection};
 use diesel_migrations::embed_migrations;
@@ -107,9 +108,9 @@ fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
                 station: row.remove(0),
                 topic: row.remove(0),
                 title: row.remove(0),
-                date: row.remove(0),
-                time: row.remove(0),
-                duration: row.remove(0),
+                date: date_from(row.remove(0).as_str()),
+                time: time_from(row.remove(0).as_str()),
+                duration: duration_from(row.remove(0).as_str()),
                 size: row.remove(0),
                 description: row.remove(0),
                 url: row.remove(0),
@@ -167,11 +168,41 @@ fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
         diesel::delete(crate::schema::mediathek_entries::table).execute(&connection)?;
 
         diesel::insert_into(crate::schema::mediathek_entries::table)
-            .values(&values)
+            .values(values.as_slice())
             .execute(&connection)?;
 
         println!(" done!");
     }
 
     Ok(())
+}
+
+fn duration_from(s: &str) -> i64 {
+    if s.is_empty() {
+        return 0;
+    }
+
+    let fake_time = NaiveTime::parse_from_str(s, "%H:%M:%S").unwrap();
+
+    let fake_start = NaiveTime::from_hms(0, 0, 0);
+
+    let duration = fake_time.signed_duration_since(fake_start);
+
+    duration.num_seconds()
+}
+
+fn date_from(s: &str) -> NaiveDate {
+    if s.is_empty() {
+        return NaiveDate::from_num_days_from_ce(1);
+    }
+
+    NaiveDate::parse_from_str(s, "%d.%m.%Y").unwrap()
+}
+
+fn time_from(s: &str) -> NaiveTime {
+    if s.is_empty() {
+        return NaiveTime::from_hms(0, 0, 0);
+    }
+
+    NaiveTime::parse_from_str(s, "%H:%M:%S").unwrap()
 }
