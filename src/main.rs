@@ -8,7 +8,6 @@ mod schema;
 mod url_util;
 
 use crate::input_data::InputData;
-use async_std::task;
 use chrono::{NaiveDate, NaiveTime};
 use clap::Clap;
 use diesel::{Connection, SqliteConnection};
@@ -60,7 +59,7 @@ fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
 
     print!("Fetching list...");
     io::stdout().flush().unwrap();
-    let bytes = task::block_on(surf::get(&list_url).recv_bytes())?;
+    let bytes = reqwest::blocking::get(&list_url)?.bytes()?.to_vec();
     println!(" done!");
 
     print!("Decompressing...");
