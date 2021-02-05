@@ -127,8 +127,11 @@ fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
                 new: row.remove(0),
             })
             .map(|input_data| {
-                if !input_data.station.is_empty() && !input_data.topic.is_empty() {
+                if !input_data.station.is_empty() {
                     last_station = input_data.station;
+                }
+
+                if !input_data.topic.is_empty() {
                     last_topic = input_data.topic;
                 }
 
@@ -177,32 +180,20 @@ fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn duration_from(s: &str) -> i64 {
-    if s.is_empty() {
-        return 0;
-    }
-
-    let fake_time = NaiveTime::parse_from_str(s, "%H:%M:%S").unwrap();
+fn duration_from(s: &str) -> Option<i64> {
+    let fake_time = NaiveTime::parse_from_str(s, "%H:%M:%S").ok()?;
 
     let fake_start = NaiveTime::from_hms(0, 0, 0);
 
     let duration = fake_time.signed_duration_since(fake_start);
 
-    duration.num_seconds()
+    Some(duration.num_seconds())
 }
 
-fn date_from(s: &str) -> NaiveDate {
-    if s.is_empty() {
-        return NaiveDate::from_num_days_from_ce(1);
-    }
-
-    NaiveDate::parse_from_str(s, "%d.%m.%Y").unwrap()
+fn date_from(s: &str) -> Option<NaiveDate> {
+    NaiveDate::parse_from_str(s, "%d.%m.%Y").ok()
 }
 
-fn time_from(s: &str) -> NaiveTime {
-    if s.is_empty() {
-        return NaiveTime::from_hms(0, 0, 0);
-    }
-
-    NaiveTime::parse_from_str(s, "%H:%M:%S").unwrap()
+fn time_from(s: &str) -> Option<NaiveTime> {
+    NaiveTime::parse_from_str(s, "%H:%M:%S").ok()
 }

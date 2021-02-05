@@ -8,9 +8,9 @@ pub struct InputData {
     pub station: String,
     pub topic: String,
     pub title: String,
-    pub date: NaiveDate,
-    pub time: NaiveTime,
-    pub duration: i64,
+    pub date: Option<NaiveDate>,
+    pub time: Option<NaiveTime>,
+    pub duration: Option<i64>,
     /// The size in MB
     pub size: String,
     pub description: String,
