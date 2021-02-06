@@ -27,6 +27,10 @@ enum Cmd {
         #[clap(default_value = BASE_URL, long)]
         server_url: String,
     },
+    /// Create a new subscription
+    Subscribe,
+    /// Scans all subscriptions and downloads newly added tv-shows or movies
+    Download,
     #[cfg(debug_assertions)]
     /// Emits the os-specific path to the local database
     EmitDatabasePath,
@@ -39,6 +43,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match cmd {
         Cmd::Update { server_url } => run(server_url),
+        Cmd::Subscribe => Ok(()),
+        Cmd::Download => Ok(()),
         #[cfg(debug_assertions)]
         Cmd::EmitDatabasePath => {
             println!("{}", paths::database_dir()?.display());
