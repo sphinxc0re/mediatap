@@ -50,7 +50,10 @@ embed_migrations!();
 fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
     let db_path = paths::database_dir()?;
 
-    let connection = SqliteConnection::establish(db_path.to_str().unwrap())?;
+    let db_path_str = db_path
+        .to_str()
+        .expect("database path contains invalid unicode");
+    let connection = SqliteConnection::establish(db_path_str)?;
 
     embedded_migrations::run(&connection)?;
 
@@ -58,12 +61,12 @@ fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
 
     print!("Fetching list...");
     io::stdout().flush().unwrap();
-    let bytes = reqwest::blocking::get(&list_url)?.bytes()?.to_vec();
+    let bytes = reqwest::blocking::get(&list_url)?.bytes()?;
     println!(" done!");
 
     print!("Decompressing...");
     io::stdout().flush().unwrap();
-    let mut compressed_list = XzDecoder::new(bytes.as_slice());
+    let mut compressed_list = XzDecoder::new(&*bytes);
 
     let mut contents = Vec::new();
     compressed_list.read_to_end(&mut contents).unwrap();
