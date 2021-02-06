@@ -3,24 +3,21 @@ extern crate diesel_migrations;
 #[macro_use]
 extern crate diesel;
 
+mod consts;
 mod input_data;
+mod paths;
 mod schema;
 mod url_util;
 
+use crate::consts::{BASE_URL, FILM_LIST_FILE_NAME};
 use crate::input_data::InputData;
 use chrono::{NaiveDate, NaiveTime};
 use clap::Clap;
 use diesel::{Connection, SqliteConnection};
 use diesel_migrations::embed_migrations;
-use directories::ProjectDirs;
 use json_minimal::Json;
 use std::io::{self, Read, Write};
 use xz2::read::XzDecoder;
-
-const BASE_URL: &str = "https://liste.mediathekview.de";
-const FILM_LIST_FILE_NAME: &str = "Filmliste-akt.xz";
-
-const DB_FILE_NAME: &str = "db.sqlite";
 
 #[derive(Clap)]
 enum Cmd {
@@ -29,6 +26,9 @@ enum Cmd {
         #[clap(default_value = BASE_URL, long)]
         server_url: String,
     },
+    #[cfg(debug_assertions)]
+    /// Emits the os-specific path to the local database
+    EmitDatabasePath,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -36,20 +36,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match cmd {
         Cmd::Update { server_url } => run(server_url),
+        #[cfg(debug_assertions)]
+        Cmd::EmitDatabasePath => {
+            println!("{}", paths::database_dir()?.display());
+
+            Ok(())
+        }
     }
 }
 
 embed_migrations!();
 
 fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
-    let dirs = ProjectDirs::from("", "", env!("CARGO_PKG_NAME")).unwrap();
-
-    let base_dir = dirs.data_dir().to_path_buf();
-    if !base_dir.exists() {
-        std::fs::create_dir_all(&base_dir)?;
-    }
-
-    let db_path = base_dir.join(DB_FILE_NAME);
+    let db_path = paths::database_dir()?;
 
     let connection = SqliteConnection::establish(db_path.to_str().unwrap())?;
 
