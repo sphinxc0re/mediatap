@@ -15,6 +15,7 @@ use chrono::{NaiveDate, NaiveTime};
 use clap::Clap;
 use diesel::{Connection, SqliteConnection};
 use diesel_migrations::embed_migrations;
+use human_panic::setup_panic;
 use json_minimal::Json;
 use std::io::{self, Read, Write};
 use xz2::read::XzDecoder;
@@ -32,6 +33,8 @@ enum Cmd {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    setup_panic!();
+
     let cmd = Cmd::parse();
 
     match cmd {
@@ -50,31 +53,29 @@ embed_migrations!();
 fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
     let db_path = paths::database_dir()?;
 
-    let db_path_str = db_path
-        .to_str()
-        .expect("database path contains invalid unicode");
-    let connection = SqliteConnection::establish(db_path_str)?;
+    let db_path_str = format!("{}", db_path.display());
+    let connection = SqliteConnection::establish(&db_path_str)?;
 
     embedded_migrations::run(&connection)?;
 
     let list_url = format!("{}/{}", server_url, FILM_LIST_FILE_NAME);
 
     print!("Fetching list...");
-    io::stdout().flush().unwrap();
+    io::stdout().flush()?;
     let bytes = reqwest::blocking::get(&list_url)?.bytes()?;
     println!(" done!");
 
     print!("Decompressing...");
-    io::stdout().flush().unwrap();
+    io::stdout().flush()?;
     let mut compressed_list = XzDecoder::new(&*bytes);
 
     let mut contents = Vec::new();
-    compressed_list.read_to_end(&mut contents).unwrap();
+    compressed_list.read_to_end(&mut contents)?;
     println!(" done!");
 
     print!("Parsing + transforming...");
-    io::stdout().flush().unwrap();
-    let root_value = Json::parse(&contents).unwrap();
+    io::stdout().flush()?;
+    let root_value = Json::parse(&contents).map_err(|_| "json parse error")?;
 
     if let Json::JSON(inner) = root_value {
         let mut last_station = String::new();
@@ -167,7 +168,7 @@ fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
         use crate::diesel::RunQueryDsl;
 
         print!("Building Database...");
-        io::stdout().flush().unwrap();
+        io::stdout().flush()?;
 
         diesel::delete(crate::schema::mediathek_entries::table).execute(&connection)?;
 

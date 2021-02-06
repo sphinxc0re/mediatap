@@ -3,7 +3,8 @@ use directories::ProjectDirs;
 use std::path::PathBuf;
 
 pub fn database_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
-    let dirs = ProjectDirs::from("", "", env!("CARGO_PKG_NAME")).unwrap();
+    let dirs = ProjectDirs::from("", "", env!("CARGO_PKG_NAME"))
+        .ok_or("unable to obtain database directory")?;
 
     let base_dir = dirs.data_dir().to_path_buf();
     if !base_dir.exists() {
