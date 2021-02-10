@@ -3,6 +3,7 @@ extern crate diesel_migrations;
 #[macro_use]
 extern crate diesel;
 
+mod config;
 mod consts;
 mod errors;
 mod models;
@@ -45,11 +46,11 @@ fn main() -> Result<()> {
 
     match cmd {
         Cmd::Update { server_url } => run(server_url),
-        Cmd::Subscribe => subscriptions::run(),
-        Cmd::Download => Ok(()),
+        Cmd::Subscribe => subscriptions::new(),
+        Cmd::Download => subscriptions::execute_all(),
         #[cfg(debug_assertions)]
         Cmd::EmitDatabasePath => {
-            println!("{}", paths::database_dir()?.display());
+            println!("{}", paths::database_path()?.display());
 
             Ok(())
         }
@@ -168,6 +169,7 @@ fn run(server_url: String) -> Result<()> {
                 }
             })
             .collect();
+
         println!(" done!");
 
         use crate::diesel::RunQueryDsl;

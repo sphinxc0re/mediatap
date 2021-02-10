@@ -1,6 +1,6 @@
 # mediatap
 
-A command line tool to automate downloading TV-shows/movies from online TV plattforms of German public television (e.g. ARD, ZDF, WDR, etc...).
+A command line tool to automate downloading TV-shows/movies from online media plattforms of German public broadcasting (e.g. ARD, ZDF, WDR, etc...).
 
 ## Installation
 

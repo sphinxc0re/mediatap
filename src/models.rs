@@ -6,7 +6,7 @@ use diesel::Insertable;
 use diesel::{Connection, SqliteConnection};
 
 pub fn establish_connection() -> Result<SqliteConnection> {
-    let db_path = paths::database_dir()?;
+    let db_path = paths::database_path()?;
 
     let db_path_str = format!("{}", db_path.display());
     let connection = SqliteConnection::establish(&db_path_str)?;
