@@ -4,16 +4,18 @@ extern crate diesel_migrations;
 extern crate diesel;
 
 mod consts;
-mod input_data;
+mod errors;
+mod models;
 mod paths;
 mod schema;
+mod subscriptions;
 mod url_util;
 
 use crate::consts::{BASE_URL, FILM_LIST_FILE_NAME};
-use crate::input_data::InputData;
+use crate::errors::Result;
+use crate::models::NewEntry;
 use chrono::{NaiveDate, NaiveTime};
 use clap::Clap;
-use diesel::{Connection, SqliteConnection};
 use diesel_migrations::embed_migrations;
 use human_panic::setup_panic;
 use json_minimal::Json;
@@ -36,14 +38,14 @@ enum Cmd {
     EmitDatabasePath,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<()> {
     setup_panic!();
 
     let cmd = Cmd::parse();
 
     match cmd {
         Cmd::Update { server_url } => run(server_url),
-        Cmd::Subscribe => Ok(()),
+        Cmd::Subscribe => subscriptions::run(),
         Cmd::Download => Ok(()),
         #[cfg(debug_assertions)]
         Cmd::EmitDatabasePath => {
@@ -56,11 +58,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 embed_migrations!();
 
-fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
-    let db_path = paths::database_dir()?;
-
-    let db_path_str = format!("{}", db_path.display());
-    let connection = SqliteConnection::establish(&db_path_str)?;
+fn run(server_url: String) -> Result<()> {
+    let connection = models::establish_connection()?;
 
     embedded_migrations::run(&connection)?;
 
@@ -88,7 +87,7 @@ fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
         let mut last_topic = String::new();
 
         let values: Vec<_> = inner
-            .iter()
+            .into_iter()
             .skip(2)
             .filter_map(|entry| {
                 if let Json::OBJECT { value, .. } = entry {
@@ -112,7 +111,7 @@ fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
 
                 None
             })
-            .map(|mut row| InputData {
+            .map(|mut row| NewEntry {
                 station: row.remove(0),
                 topic: row.remove(0),
                 title: row.remove(0),
@@ -143,7 +142,7 @@ fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
                     last_topic = input_data.topic;
                 }
 
-                InputData {
+                NewEntry {
                     station: last_station.clone(),
                     topic: last_topic.clone(),
                     ..input_data
@@ -162,7 +161,7 @@ fn run(server_url: String) -> Result<(), Box<dyn std::error::Error>> {
                     String::new()
                 };
 
-                InputData {
+                NewEntry {
                     url_small,
                     url_hd,
                     ..input_data

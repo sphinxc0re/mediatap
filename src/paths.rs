@@ -1,8 +1,9 @@
 use crate::consts::DB_FILE_NAME;
+use crate::errors::Result;
 use directories::ProjectDirs;
 use std::path::PathBuf;
 
-pub fn database_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
+pub fn database_dir() -> Result<PathBuf> {
     let dirs = ProjectDirs::from("", "", env!("CARGO_PKG_NAME"))
         .ok_or("unable to obtain database directory")?;
 

@@ -1,10 +1,22 @@
+use crate::errors::Result;
+use crate::paths;
 use crate::schema::mediathek_entries;
 use chrono::{NaiveDate, NaiveTime};
 use diesel::Insertable;
+use diesel::{Connection, SqliteConnection};
+
+pub fn establish_connection() -> Result<SqliteConnection> {
+    let db_path = paths::database_dir()?;
+
+    let db_path_str = format!("{}", db_path.display());
+    let connection = SqliteConnection::establish(&db_path_str)?;
+
+    Ok(connection)
+}
 
 #[derive(Insertable, Debug)]
 #[table_name = "mediathek_entries"]
-pub struct InputData {
+pub struct NewEntry {
     pub station: String,
     pub topic: String,
     pub title: String,
