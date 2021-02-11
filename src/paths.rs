@@ -41,10 +41,5 @@ pub fn subscriptions_dir() -> Result<PathBuf> {
 pub fn config_path() -> Result<PathBuf> {
     let base_dir = base_dir()?;
 
-    let path = base_dir.join(CONFIG_FILE_NAME);
-    if !path.exists() {
-        std::fs::create_dir_all(&path)?;
-    }
-
-    Ok(path)
+    Ok(base_dir.join(CONFIG_FILE_NAME))
 }

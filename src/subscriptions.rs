@@ -93,14 +93,37 @@ pub fn execute_all() -> Result<()> {
         .map(|dir_entry| dir_entry.path())
         .filter(|entry| entry.is_file());
 
-    for dir in iter {
-        let sub = Subscription::load(&dir)?;
+    for file in iter {
+        let sub = Subscription::load(&file)?;
 
         let download_dir = config.base_directory.join(sub.identifier.clone());
 
+        fs::create_dir_all(&download_dir)?;
+
         let urls = sub.execute(&connection)?;
 
-        // TODO: Start actual download
+        let futures: Vec<_> = urls
+            .into_iter()
+            .map(|url| {
+                let dir = download_dir.clone();
+
+                async move {
+                    let url_clone = url.clone();
+                    let formatted_url = url_clone.split('/').last().unwrap();
+                    println!("start download... {}", formatted_url);
+                    let res = reqwest::get(&url).await;
+
+                    if let Ok(response) = res {
+                        let bytes = response.bytes().await.unwrap();
+
+                        fs::write(&dir.clone().join(formatted_url), bytes).unwrap();
+                        println!("Finished {}!", formatted_url);
+                    }
+                }
+            })
+            .collect();
+
+        tokio::runtime::Runtime::new()?.block_on(futures::future::join_all(futures));
     }
 
     Ok(())
