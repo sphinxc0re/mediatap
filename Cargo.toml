@@ -1,7 +1,9 @@
 [package]
 authors = ["Julian Laubstein <contact@julianlaubstein.de>"]
+description = "A CLI for automating German public-broadcasting TV-show subscriptions"
 edition = "2018"
 homepage = "https://github.com/sphinxc0re/mediatap"
+license = "GPL-3.0-only"
 name = "mediatap"
 repository = "https://github.com/sphinxc0re/mediatap"
 version = "0.1.0"
