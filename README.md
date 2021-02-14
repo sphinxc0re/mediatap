@@ -4,7 +4,7 @@ A command line tool to automate downloading TV-shows/movies from online media pl
 
 ## Installation
 
-Right now, there sadly is no user-friendly way of installing mediatap. You'll need to install Rust (https://www.rust-lang.org/learn/get-started) and install `mediatap` via `cargo`, Rust's package manager and build tool.
+Right now, there sadly is no user-friendly way of installing mediatap. You'll need to install Rust (https://www.rust-lang.org/learn/get-started) and install `mediatap` via `cargo`, Rust's package manager and build tool. Since `mediatap` relies on SQLite, you also need to install the required runtime and development libraries.
 
 ```shell
 cargo install mediatap

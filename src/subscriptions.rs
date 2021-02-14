@@ -7,6 +7,7 @@ use crate::{
 use chrono::NaiveDate;
 use dialoguer::{Input, Select};
 use diesel::SqliteConnection;
+use futures::TryFutureExt;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display},
@@ -163,11 +164,19 @@ pub fn execute_all() -> Result<()> {
 }
 
 async fn download(url: String, target_dir: PathBuf, file_name: PathBuf) -> Result<()> {
+    let complete_file_path = target_dir.join(&file_name);
+
+    if complete_file_path.is_file() && complete_file_path.exists() {
+        println!("{} already exists. Skipping.", file_name.display());
+        return Ok(());
+    }
+
     println!("start download... {}", file_name.display());
+
     let response = reqwest::get(&url).await?;
     let bytes = response.bytes().await?;
 
-    fs::write(target_dir.join(&file_name), bytes)?;
+    fs::write(&complete_file_path, bytes)?;
     println!("Finished {}!", file_name.display());
 
     Ok(())
