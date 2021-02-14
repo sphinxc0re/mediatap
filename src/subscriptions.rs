@@ -181,7 +181,7 @@ pub fn new() -> Result<()> {
 
     let mut quality_items = vec![Quality::High, Quality::Medium, Quality::Low];
     let quality_idx: usize = Select::new()
-        .with_prompt("Please select a prefered quality")
+        .with_prompt("Please select a preferred quality")
         .items(quality_items.as_slice())
         .default(1)
         .interact()?;
