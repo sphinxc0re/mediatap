@@ -7,7 +7,6 @@ use crate::{
 use chrono::NaiveDate;
 use dialoguer::{Input, Select};
 use diesel::SqliteConnection;
-use futures::TryFutureExt;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display},

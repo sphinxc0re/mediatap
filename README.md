@@ -28,3 +28,7 @@ diesel migration run --database-url "$(cargo run -- emit-database-path)"
 ```
 
 Notice that the `emit-database-path` subcommand is not available in release mode.
+
+## Acknowledgements
+
+This project heavily relies on and would not be possible without the great work by the people at https://mediathekview.de/. Big thanks to all the contributors who made this project possible.
