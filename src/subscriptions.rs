@@ -4,13 +4,14 @@ use crate::{
     models,
     paths::{self, subscriptions_dir},
 };
+use chrono::NaiveDate;
 use dialoguer::{Input, Select};
 use diesel::SqliteConnection;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display},
     fs::{self, read_to_string},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -57,24 +58,37 @@ impl Subscription {
         Ok(sub)
     }
 
-    pub fn execute(&self, conn: &SqliteConnection) -> Result<Vec<String>> {
+    pub fn execute(
+        &self,
+        conn: &SqliteConnection,
+    ) -> Result<Vec<(String, Option<NaiveDate>, String)>> {
         use crate::schema::mediathek_entries::dsl::*;
         use diesel::prelude::*;
 
-        let results: Vec<(String, Option<String>, Option<String>)> = mediathek_entries
+        let results: Vec<(
+            String,
+            Option<NaiveDate>,
+            String,
+            Option<String>,
+            Option<String>,
+        )> = mediathek_entries
             .filter(title.like(&self.term).or(topic.like(&self.term)))
             .filter(duration.gt(&self.minimum_length))
             .order_by(date.desc())
-            .select((url, url_small, url_hd))
+            .select((title, date, url, url_small, url_hd))
             .load(conn)?;
 
         Ok(results
             .into_iter()
             .map(
-                |(data_url, data_url_small, data_url_hd)| match self.quality {
-                    Quality::Low => data_url_small.unwrap_or_else(|| data_url),
-                    Quality::Medium => data_url,
-                    Quality::High => data_url_hd.unwrap_or_else(|| data_url),
+                |(data_title, data_date, data_url, data_url_small, data_url_hd)| {
+                    let quality_url = match self.quality {
+                        Quality::Low => data_url_small.unwrap_or_else(|| data_url),
+                        Quality::Medium => data_url,
+                        Quality::High => data_url_hd.unwrap_or_else(|| data_url),
+                    };
+
+                    (data_title, data_date, quality_url)
                 },
             )
             .collect())
@@ -93,6 +107,8 @@ pub fn execute_all() -> Result<()> {
         .map(|dir_entry| dir_entry.path())
         .filter(|entry| entry.is_file());
 
+    let mut all_download_futures = Vec::new();
+
     for file in iter {
         let sub = Subscription::load(&file)?;
 
@@ -102,29 +118,57 @@ pub fn execute_all() -> Result<()> {
 
         let urls = sub.execute(&connection)?;
 
-        let futures: Vec<_> = urls
+        let mut futures: Vec<_> = urls
             .into_iter()
-            .map(|url| {
+            .map(|(title, date, url)| {
                 let dir = download_dir.clone();
+                let date_str = date
+                    .map(|date| format!("{}", date.format("%Y-%m-%d")))
+                    .unwrap_or("unknown_date".to_string());
 
-                async move {
-                    let url_clone = url.clone();
-                    let formatted_url = url_clone.split('/').last().unwrap();
-                    println!("start download... {}", formatted_url);
-                    let res = reqwest::get(&url).await;
+                let title_str = title.trim().to_lowercase().replace(' ', "_");
 
-                    if let Ok(response) = res {
-                        let bytes = response.bytes().await.unwrap();
+                let ext = url
+                    .rsplit(".")
+                    .nth(0)
+                    .expect("This has to be ending with something");
 
-                        fs::write(&dir.clone().join(formatted_url), bytes).unwrap();
-                        println!("Finished {}!", formatted_url);
-                    }
-                }
+                let file_name_base = format!("{date}_{title}", date = date_str, title = title_str,);
+
+                let file_name = PathBuf::from(file_name_base).with_extension(ext);
+
+                download(url.clone(), dir.clone(), file_name)
             })
             .collect();
 
-        tokio::runtime::Runtime::new()?.block_on(futures::future::join_all(futures));
+        all_download_futures.append(&mut futures);
     }
+
+    let runtime = tokio::runtime::Runtime::new()?;
+
+    let results = runtime.block_on(futures::future::join_all(all_download_futures));
+
+    let errors: Vec<_> = results.into_iter().filter_map(|res| res.err()).collect();
+
+    if !errors.is_empty() {
+        eprintln!("{} errors:", errors.len());
+        eprintln!();
+
+        for error in errors {
+            eprintln!("Error: {}", error);
+        }
+    }
+
+    Ok(())
+}
+
+async fn download(url: String, target_dir: PathBuf, file_name: PathBuf) -> Result<()> {
+    println!("start download... {}", file_name.display());
+    let response = reqwest::get(&url).await?;
+    let bytes = response.bytes().await?;
+
+    fs::write(target_dir.join(&file_name), bytes)?;
+    println!("Finished {}!", file_name.display());
 
     Ok(())
 }
