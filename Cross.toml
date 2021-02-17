@@ -1,2 +1,0 @@
-[target.armv5te-unknown-linux-gnueabi]
-image = "mediatap/armv5te-cross"
