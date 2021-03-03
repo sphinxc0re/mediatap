@@ -133,9 +133,14 @@ pub fn execute_all() -> Result<()> {
                     .nth(0)
                     .expect("This has to be ending with something");
 
-                let file_name_base = format!("{date}_{title}", date = date_str, title = title_str,);
+                let file_name_base = format!(
+                    "{date}_{title}.{extension}",
+                    date = date_str,
+                    title = title_str,
+                    extension = ext
+                );
 
-                let file_name = PathBuf::from(file_name_base).with_extension(ext);
+                let file_name = PathBuf::from(file_name_base);
 
                 download(url.clone(), dir.clone(), file_name)
             })
